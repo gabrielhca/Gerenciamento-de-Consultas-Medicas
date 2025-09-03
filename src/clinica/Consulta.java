@@ -1,4 +1,7 @@
-package dadosclinica;
+package clinica;
+
+import dadospessoais.Medico;
+import dadospessoais.Paciente;
 
 public class Consulta {
     private final Paciente paciente;
@@ -35,7 +38,7 @@ public class Consulta {
     public void exibirDetalhes(){
         String status = cancelada ? " (CANCELADA)" : "";
         System.out.println("Paciente " + paciente.getNome() +
-                            ", Medico: Dr(a) " + medico.getNome() + " (" + medico.getEspecialidade() + ")" +
-                            ", Data/Hora: " + dataHora + status);
+                ", Medico: Dr(a) " + medico.getNome() + " (" + medico.getEspecialidade() + ")" +
+                ", Data/Hora: " + dataHora + status);
     }
 }

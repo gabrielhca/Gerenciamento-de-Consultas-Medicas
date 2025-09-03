@@ -1,11 +1,15 @@
 package centralcomando;
 import java.util.*;
-import dadosclinica.*;
+
+import clinica.Consulta;
+import dadospessoais.*;
+import notificacao.Notificavel;
+import notificacao.NotificacaoEmail;
 
 public class Aplicacao {
-    private final Vector<Paciente> pacientes = new Vector<>();
-    private final Vector<Consulta> consultas = new Vector<>();
-    private final Vector<Medico> medicos = new Vector<>();
+    private final List<Paciente> pacientes = new ArrayList<>();
+    private final List<Consulta> consultas = new ArrayList<>();
+    private final List<Medico> medicos = new ArrayList<>();
     private final Scanner scanner = new Scanner(System.in);
 
     public void executar(){
@@ -39,13 +43,16 @@ public class Aplicacao {
         System.out.print("Nome do paciente: ");
         String nome = scanner.nextLine();
 
-        System.out.print("CPF: ");
-        String cpf = scanner.nextLine();
-
         System.out.print("Telefone: ");
         String telefone = scanner.nextLine();
 
-        Paciente paciente = new Paciente(nome, cpf, telefone);
+        System.out.print("E-mail: ");
+        String email = scanner.nextLine();
+
+        System.out.print("CPF: ");
+        String cpf = scanner.nextLine();
+
+        Paciente paciente = new Paciente(nome, telefone, email, cpf);
         this.pacientes.add(paciente);
         System.out.println("Paciente registrado com sucesso!");
     }
@@ -54,13 +61,19 @@ public class Aplicacao {
         System.out.print("Nome do Medico: ");
         String nome = scanner.nextLine();
 
+        System.out.print("Telefone: ");
+        String telefone = scanner.nextLine();
+
+        System.out.print("E-mail: ");
+        String email = scanner.nextLine();
+
         System.out.print("CRM: ");
         String crm = scanner.nextLine();
 
         System.out.print("Especialidade: ");
         String especialidade = scanner.nextLine();
 
-        Medico medico = new Medico(nome, crm, especialidade);
+        Medico medico = new Medico(nome, telefone, email, crm, especialidade);
         this.medicos.add(medico);
         System.out.println("Medico registrado com sucesso!");
     }
@@ -95,18 +108,30 @@ public class Aplicacao {
             consultas.get(i).exibirDetalhes();
         }
 
-        System.out.print("Escolha o numero da consulta para cancelar: ");
-        int index = Integer.parseInt(scanner.nextLine()) - 1;
+        int index;
 
-        if(index >= 0 && index <consultas.size()){
-            Consulta consultaParaCancelar = consultas.get(index);
-            if(!consultaParaCancelar.getCancelada()) {
-                consultaParaCancelar.cancelarConsulta();
+        try {
+            System.out.print("Escolha o numero da consulta para cancelar: ");
+            index = Integer.parseInt(scanner.nextLine()) - 1;
+
+            if(index >= 0 && index < consultas.size()){
+                Consulta consultaParaCancelar = consultas.get(index);
+                if(!consultaParaCancelar.getCancelada()) {
+                    // logica para enviar notificacao usando interface
+                    // declaro a variavel usando interface
+                    Notificavel notificacao = new NotificacaoEmail();
+                    String mensagem = "Sua consulta com Dr(a) " + consultaParaCancelar.getMedico().getNome()
+                            + " em " + consultaParaCancelar.getDataHora() + " foi cancelada.";
+                    notificacao.enviarNotificacao(mensagem);
+                } else {
+                    System.out.println("Essa consulta ja foi cancelada.");
+                }
             } else {
-                System.out.println("Essa consulta ja foi cancelada.");
+                System.out.println("Indice invalido!");
             }
-        } else {
-            System.out.println("Indice invalido!");
+            // NumberFormatException é um erro quando o metodo tenta converter uma String em um tipo numerico, mas a String não contem um caracter valido para conversão
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada invalida. Por favor, digite um numero.");
         }
 
     }
@@ -151,7 +176,7 @@ public class Aplicacao {
                     return;
                 }
 
-                Vector<Consulta> consultasDoMedico = medico.getConsultas();
+                List<Consulta> consultasDoMedico = medico.getConsultas();
 
                 if(consultasDoMedico.isEmpty()){
                     System.out.println("Nunhuma consulta agendada!");
@@ -169,7 +194,7 @@ public class Aplicacao {
                     return;
                 }
 
-                Vector<Consulta> consultasDoPaciente = paciente.getConsultas();
+                List<Consulta> consultasDoPaciente = paciente.getConsultas();
 
                 if(consultasDoPaciente.isEmpty()){
                     System.out.println("Nunhuma consulta agendada!");
@@ -188,7 +213,7 @@ public class Aplicacao {
     private Paciente selecionarPaciente(){
         listarPacientes();
         System.out.print("Escolha um paciente: ");
-        int index = Integer.parseInt(scanner.next()) - 1;
+        int index = Integer.parseInt(scanner.nextLine()) - 1;
 
         // Valida e retorna o paciente selecionado
         if (index >= 0 && index < pacientes.size()){
@@ -203,7 +228,7 @@ public class Aplicacao {
     private Medico selecionarMedico(){
         listarMedicos();
         System.out.print("Escolha um medico: ");
-        int index = Integer.parseInt(scanner.next()) - 1;
+        int index = Integer.parseInt(scanner.nextLine()) - 1;
 
         // Validade e retorna o medico selecionado
         if(index > 0 && index < medicos.size()){

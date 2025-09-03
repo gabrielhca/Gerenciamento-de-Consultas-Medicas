@@ -3,8 +3,8 @@ import java.util.*;
 
 import clinica.Consulta;
 import dadospessoais.*;
-import notificacao.Notificavel;
-import notificacao.NotificacaoEmail;
+import notificacao.*;
+import exception.*;
 
 public class Aplicacao {
     private final List<Paciente> pacientes = new ArrayList<>();
@@ -13,7 +13,7 @@ public class Aplicacao {
     private final Scanner scanner = new Scanner(System.in);
 
     public void executar(){
-        int opcao;
+        int opcao = 0; // inicia com zero para entrar no loop
 
         do {
             System.out.println("\nMenu");
@@ -25,16 +25,30 @@ public class Aplicacao {
             System.out.println("6. Listar Medicos");
             System.out.println("7. Listar Consultas");
             System.out.println("8. Sair");
-            opcao = Integer.parseInt(scanner.nextLine());
 
-            switch(opcao){
-                case 1 -> adicionarPaciente();
-                case 2 -> adicionarMedico();
-                case 3 -> agendarConsulta();
-                case 4 -> cancelarConsulta();
-                case 5 -> listarPacientes();
-                case 6 -> listarMedicos();
-                case 7 -> listarConsultas();
+            try {
+                System.out.print("Escolha uma opção: ");
+                opcao = Integer.parseInt(scanner.nextLine());
+
+                switch(opcao){
+                    case 1 -> adicionarPaciente();
+                    case 2 -> adicionarMedico();
+                    case 3 -> agendarConsulta();
+                    case 4 -> cancelarConsulta();
+                    case 5 -> listarPacientes();
+                    case 6 -> listarMedicos();
+                    case 7 -> {
+                        try {
+                            listarConsultas();
+                        } catch (PacienteNaoEncontradoException | MedicoNaoEncontradoException e) {
+                            System.out.println("Erro ao listar consultas: " + e.getMessage());
+                        }
+                    }
+                    case 8 -> System.out.println("Saindo...");
+                    default -> System.out.println("Opção invalida! Por favor, escolha um numero de 1 a 8.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Entrada invalida. Por favor, digite um número.");
             }
         }while(opcao != 8);
     }
@@ -79,23 +93,28 @@ public class Aplicacao {
     }
 
     private void agendarConsulta(){
-        Paciente paciente = selecionarPaciente();
-        if (paciente == null) return;
+        try {
+            Paciente paciente = selecionarPaciente();
+            Medico medico = selecionarMedico();
 
-        Medico medico = selecionarMedico();
-        if (medico == null) return;
+            System.out.println("Data (dd/mm/aa) - Horario (hh:mm)");
+            String dataHora = scanner.nextLine();
 
-        System.out.println("Data (dd/mm/aa) - Horario (hh:mm)");
-        String dataHora = scanner.nextLine();
+            Consulta novaConsulta = new Consulta(paciente, medico, dataHora);
+            consultas.add(novaConsulta);
 
-        Consulta novaConsulta = new Consulta(paciente, medico, dataHora);
-        consultas.add(novaConsulta);
+            paciente.adicionarConsulta(novaConsulta);
+            medico.adicionarConsulta(novaConsulta);
 
-        paciente.adicionarConsulta(novaConsulta);
-        medico.adicionarConsulta(novaConsulta);
+            System.out.println("Consulta marcada!");
 
-        System.out.println("Consulta marcada!");
+            Notificavel notificacao = new NotificacaoSMS();
+            String mensagem = "Sua consulta com Dr(a): " + medico.getNome()
+                    + " foi agendada para " + dataHora + ".";
 
+        } catch (PacienteNaoEncontradoException | MedicoNaoEncontradoException e) {
+            System.out.println("Erro ao agendar Consulta!" + e.getMessage());
+        }
     }
 
     private void cancelarConsulta(){
@@ -117,8 +136,6 @@ public class Aplicacao {
             if(index >= 0 && index < consultas.size()){
                 Consulta consultaParaCancelar = consultas.get(index);
                 if(!consultaParaCancelar.getCancelada()) {
-                    // logica para enviar notificacao usando interface
-                    // declaro a variavel usando interface
                     Notificavel notificacao = new NotificacaoEmail();
                     String mensagem = "Sua consulta com Dr(a) " + consultaParaCancelar.getMedico().getNome()
                             + " em " + consultaParaCancelar.getDataHora() + " foi cancelada.";
@@ -158,7 +175,7 @@ public class Aplicacao {
         }
     }
 
-    private void listarConsultas(){
+    private void listarConsultas() throws PacienteNaoEncontradoException, MedicoNaoEncontradoException {
         if (consultas.isEmpty()) {
             System.out.println("Nenhuma consulta agendada!");
             return;
@@ -210,33 +227,43 @@ public class Aplicacao {
         }
     }
 
-    private Paciente selecionarPaciente(){
+    private Paciente selecionarPaciente() throws PacienteNaoEncontradoException {
         listarPacientes();
-        System.out.print("Escolha um paciente: ");
-        int index = Integer.parseInt(scanner.nextLine()) - 1;
-
-        // Valida e retorna o paciente selecionado
-        if (index >= 0 && index < pacientes.size()){
-            return pacientes.get(index);
-        } else {
-            System.out.println("Indice invalido!");
-            return null;
+        if(pacientes.isEmpty()){
+            throw new PacienteNaoEncontradoException("Nenhum paciente cadastrado!");
         }
 
+        System.out.print("Escolha um paciente: ");
+
+        try {
+            int index = Integer.parseInt(scanner.nextLine()) - 1;
+            if (index >= 0 && index < pacientes.size()){
+                return pacientes.get(index);
+            } else {
+                throw new PacienteNaoEncontradoException("Indice de paciente invalido!");
+            }
+        } catch (NumberFormatException e) {
+            throw new PacienteNaoEncontradoException("Entrada invalida! Por favor, digite um numero.");
+        }
     }
 
-    private Medico selecionarMedico(){
+    private Medico selecionarMedico() throws MedicoNaoEncontradoException {
         listarMedicos();
-        System.out.print("Escolha um medico: ");
-        int index = Integer.parseInt(scanner.nextLine()) - 1;
-
-        // Validade e retorna o medico selecionado
-        if(index > 0 && index < medicos.size()){
-            return medicos.get(index);
-        } else {
-            System.out.println("Indice invalido!");
-            return null;
+        if (medicos.isEmpty()) {
+            throw new MedicoNaoEncontradoException("Nenhum medico cadastrado!");
         }
 
+        System.out.print("Escolha um medico: ");
+
+        try {
+            int index = Integer.parseInt(scanner.nextLine()) - 1;
+            if (index >= 0 && index < medicos.size()) {
+                return medicos.get(index);
+            } else {
+                throw new MedicoNaoEncontradoException("Indice de medico invalido!");
+            }
+        } catch (NumberFormatException e) {
+            throw new MedicoNaoEncontradoException("Entrada invalida! Por favor, digite um numero.");
+        }
     }
 }

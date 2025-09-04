@@ -123,7 +123,7 @@ public class Aplicacao {
             return;
         }
         for(int i = 0; i < consultas.size(); i++){
-            System.out.println((i+1) + ". ");
+            System.out.print((i+1) + ". ");
             consultas.get(i).exibirDetalhes();
         }
 
@@ -136,10 +136,15 @@ public class Aplicacao {
             if(index >= 0 && index < consultas.size()){
                 Consulta consultaParaCancelar = consultas.get(index);
                 if(!consultaParaCancelar.getCancelada()) {
+                    consultaParaCancelar.cancelarConsulta();
+
                     Notificavel notificacao = new NotificacaoEmail();
                     String mensagem = "Sua consulta com Dr(a) " + consultaParaCancelar.getMedico().getNome()
                             + " em " + consultaParaCancelar.getDataHora() + " foi cancelada.";
                     notificacao.enviarNotificacao(mensagem);
+
+                    System.out.println("Consulta cancelada com sucesso!");
+
                 } else {
                     System.out.println("Essa consulta ja foi cancelada.");
                 }

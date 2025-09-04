@@ -37,7 +37,7 @@ public class Consulta {
 
     public void exibirDetalhes(){
         String status = cancelada ? " (CANCELADA)" : "";
-        System.out.print("Paciente " + paciente.getNome() +
+        System.out.println("Paciente " + paciente.getNome() +
                 ", Medico: Dr(a) " + medico.getNome() + " (" + medico.getEspecialidade() + ")" +
                 ", Data/Hora: " + dataHora + status);
     }

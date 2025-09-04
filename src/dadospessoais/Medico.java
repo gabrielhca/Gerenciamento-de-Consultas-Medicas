@@ -1,4 +1,7 @@
 package dadospessoais;
+import clinica.Consulta;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Medico extends Pessoa{
     private final String crm; 
